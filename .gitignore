@@ -1,0 +1,7 @@
+src/*
+!src/SCorrelatorPlotter.h
+!src/SCorrelatorPlotter.cc
+!src/SCorrelatorPlotterLinkDef.h
+!src/autogen.sh
+!src/configure.ac
+!src/Makefile.am
