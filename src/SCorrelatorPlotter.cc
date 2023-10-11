@@ -16,6 +16,12 @@ using namespace std;
 
 
 
-// plotting methods  ---------------------------------------------------------
+namespace SColdQcdCorrelatorAnalysis {
+
+  // plotting methods  -------------------------------------------------------
+
+  /* TODO these go here */
+
+}  // end SColdQcdCorrelatorAnalysis namespace
 
 // end ------------------------------------------------------------------------

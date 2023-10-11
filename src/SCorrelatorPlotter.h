@@ -4,7 +4,7 @@
 // 05.25.2023
 //
 // A small class to consolidate plotting routines associated with
-// the sPHENIX p+Au n-point energy correlator analysis.
+// the sPHENIX Cold QCD Energy-Energy Correlator analysis.
 // ----------------------------------------------------------------------------
 
 #ifndef SCORRELATORPLOTTER_H
@@ -15,10 +15,10 @@
 #include <cassert>
 #include <iostream>
 // class declarations
-#include "TH1.h"
-#include "TFile.h"
-#include "TTree.h"
-#include "TString.h"
+#include <TH1.h>
+#include <TFile.h>
+#include <TTree.h>
+#include <TString.h>
 
 using namespace std;
 
@@ -26,23 +26,28 @@ using namespace std;
 
 // SCorrelatorPlotter definition --------------------------------------------------
 
-class SCorrelatorPlotter {
+// TODO inherit from abstract plotter class
+namespace SColdQcdCorrelatorAnalysis {
 
-  public:
+  class SCorrelatorPlotter {
+ 
+    public:
 
-    // ctor/dtor
-    SCorrelatorPlotter();
-    ~SCorrelatorPlotter();
+      // ctor/dtor
+      SCorrelatorPlotter();
+      ~SCorrelatorPlotter();
 
-    /* TODO plotting methods go here */
+      /* TODO plotting methods go here */
 
-  private:
+    private:
 
-    /* TODO members go here */
+      /* TODO members go here */
 
-    /* TODO helper methods go here */
+      /* TODO helper methods go here */
 
-};
+  };
+
+}  // end SColdQcdCorrelatorAnalysis namespace
 
 #endif
 
