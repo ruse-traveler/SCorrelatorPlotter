@@ -11,25 +11,27 @@
 
 // c++ utilities
 #include <iostream>
+#include <optional>
 #include <string>
 #include <utility>
 #include <vector>
 // root libraries
 #include <TCanvas.h>
 #include <TError.h>
+#include <TF1.h>
 #include <TFile.h>
 #include <TH1.h>
 #include <TLegend.h>
 #include <TLine.h>
-#include <TPaveText.h>
 
 // aliases for convenience
-using spair = std::pair<std::string, std::string>;
-using upair = std::pair<uint32_t, uint32_t>;
-using dpair = std::pair<double, double>;
-using fpair = std::pair<float, float>;
-using style = std::tuple<int32_t, int32_t, int32_t, int32_t>;
-using edges = std::array<double, 4>;
+using spair  = std::pair<std::string, std::string>;
+using upair  = std::pair<uint32_t, uint32_t>;
+using dpair  = std::pair<double, double>;
+using fpair  = std::pair<float, float>;
+using style  = std::tuple<int32_t, int32_t, int32_t, int32_t, float>;
+using smooth = std::tuple<std::optional<std::string>, std::vector<float>, std::pair<float, float>>;
+using edges  = std::array<double, 4>;
 
 
 
@@ -62,8 +64,8 @@ void MakeBUPPlot2024() {
   // --------------------------------------------------------------------------
 
   // i/o files
-  const std::string in_file  = "twoPoint.pa200hijing500bgkd010jet10run6.trksWithOneGeVCstCut_true.d22m10y2024.root";
-  const std::string out_file = "bup2024_eec_unscaled.pa200hijing500bkgd010jet10run6.trksWithOneGeVCstCut_true.d22m10y2024.root";
+  const std::string in_file  = "output/twoPoint.pa200hijing500bgkd010jet10run6.trksWithOneGeVCstCut_true.d22m10y2024.root";
+  const std::string out_file = "bup2024_eec_withCommentsRound2_recoveringMacro.pa200hijing500bkgd010jet10run6.trksWithOneGeVCstCut_true.d24m10y2024.root";
 
   // input histograms & output names
   const std::vector<spair> in_out_hists = {
@@ -75,17 +77,26 @@ void MakeBUPPlot2024() {
 
   // histogram styles & legend labels
   const std::vector<style> styles = {
-    {883, 20, 0, 1},
-    {602, 21, 0, 1},
-    {863, 33, 0, 1},
-    {843, 34, 0, 1}
+    {883, 20, 0, 1, 1.0},
+    {602, 21, 0, 1, 1.0},
+    {863, 33, 0, 1, 1.75},
+    {843, 34, 0, 1, 1.50}
   };
   const std::vector<std::string> labels = {
-    "p_{T}^{jet} = 10 - 20 GeV/c",
-    "p_{T}^{jet} = 20 - 30 GeV/c",
-    "p_{T}^{jet} = 30 - 40 GeV/c",
-    "p_{T}^{jet} > 40 GeV/c"
+    "p_{T}^{jet} = 10 - 20 GeV",
+    "p_{T}^{jet} = 20 - 30 GeV",
+    "p_{T}^{jet} = 30 - 40 GeV",
+    "p_{T}^{jet} > 40 GeV"
   };
+
+  // smoothing options
+  std::vector<smooth> smoothing_func = {
+    {std::nullopt, {}, {}},
+    {std::nullopt, {}, {}},
+    {"pol4(0)", {1.0, 1.0, 1.0, 1.0}, {0.03, 0.35}},
+    {"pol4(0)", {1.0, 1.0, 1.0, 1.0}, {0.03, 0.45}}
+  };
+  const bool do_smooth = true;
 
   // plotting options
   const dpair plot_xrange = {0.03, 1.};
@@ -93,7 +104,7 @@ void MakeBUPPlot2024() {
 
   // common histogram styles
   const std::string hist_title    = "";
-  const spair       axis_titles   = {"R_{L}", "Normalized EEC"};
+  const spair       axis_titles   = {"#it{R}_{L}", "Normalized EEC"};
   const fpair       title_offsets = {1.0, 1.6};
   const fpair       title_sizes   = {0.04, 0.04};
   const fpair       label_sizes   = {0.04, 0.04};
@@ -104,11 +115,9 @@ void MakeBUPPlot2024() {
 
   // text in label
   const std::vector<std::string> text = {
-    "#bf{#it{sPHENIX}} BUP 2024",
-    "#bf{PYTHIA 8} #oplus #bf{HIJING}, #it{b} = 0 - 10 fm",
-    "80 nb^{-1}, #it{p}+Au",
-    "anti-k_{T}, R_{jet} = 0.4",
-    "#bf{charged jets}"
+    "#bf{#it{sPHENIX}} BUP2024 Projection",
+    "80 nb^{-1} sampled#scale[0.6]{ }#it{p}+Au",
+    "#it{R}_{jet} = 0.4 jets"
   };
 
   // normalization routine
@@ -121,9 +130,10 @@ void MakeBUPPlot2024() {
     }
     return;
   };
+  const bool do_norm = true;
 
   // scale options
-  const bool   do_scale = false;
+  const bool   do_scale = true;
   const double scale    = CalculateScaleFactor();
 
   // text & legend options
@@ -133,13 +143,13 @@ void MakeBUPPlot2024() {
   const uint32_t text_font   = 42;
   const uint32_t text_align  = 12;
   const float    text_height = 0.05;
-  const edges    text_dim    = {0.1, 0.1, 0.3, 0.1 + (text_height * text.size())};
-  const edges    leg_dim     = {0.3, 0.1, 0.5, 0.1 + (text_height * labels.size())};
+  const float    leg_height  = (text_height * text.size()) + (text_height * labels.size());
+  const edges    leg_dim     = {0.3, 0.1, 0.5, 0.1 + leg_height};
 
   // line options
-  const uint32_t line_color = 923;
+  const uint32_t line_color = 921;
   const uint32_t line_line  = 9;
-  const uint32_t line_width = 2;
+  const uint32_t line_width = 1;
   const edges    line_dim   = {0.4, plot_yrange.first, 0.4, plot_yrange.second};
 
   // canvas options
@@ -189,8 +199,52 @@ void MakeBUPPlot2024() {
   std::cout << "    Grabbed input histograms." << std::endl;
 
   // --------------------------------------------------------------------------
-  // Scale, normalize & set styles
+  // Smooth, scale, normalize & set styles
   // --------------------------------------------------------------------------
+
+  // smooth if need be
+  if (do_smooth) {
+    for (std::size_t ihist = 0; ihist < histograms.size(); ++ihist) {
+
+      // skip if not enough smoothing options or none provided
+      if ((ihist >= smoothing_func.size()) || !get<0>(smoothing_func.at(ihist)).has_value()) {
+        continue;
+      }
+
+      // construct name
+      const std::string name = "fSmooth_" + std::to_string(ihist);
+
+      // grab fitting range
+      const double fit_start = get<2>(smoothing_func[ihist]).first;
+      const double fit_stop  = get<2>(smoothing_func[ihist]).second;
+
+      // make function
+      TF1* smoother = new TF1(
+        name.data(),
+        get<0>(smoothing_func[ihist]).value().data(),
+        fit_start,
+        fit_stop
+      );
+
+      // now fit function
+      histograms[ihist] -> Fit(name.data(), "RN");
+
+      // and finally smooth histogram
+      for (std::size_t ibin = 1; ibin <= histograms[ihist] -> GetNbinsX(); ++ibin) {
+
+        // ignore bins not in fit range
+        const double center    = histograms[ihist] -> GetBinCenter(ibin);
+        const bool   isInRange = ((center > fit_start) && (center < fit_stop));
+        if (!isInRange) continue;
+
+        // apply smoothing
+        const double smoothed = smoother -> Eval(center);
+        histograms[ihist] -> SetBinContent(ibin, smoothed);
+
+      }
+    }
+    std::cout << "    Smoothed histograms." << std::endl;
+  }
 
   // scale if need be
   if (do_scale) {
@@ -209,16 +263,19 @@ void MakeBUPPlot2024() {
               << std::endl;
   }
 
-  // normalize histograms
-  for (auto hist : histograms) {
-    normalize(hist);
+  // normalize histograms if need be
+  if (do_norm) {
+    for (auto hist : histograms) {
+      normalize(hist);
+    }
+    std::cout << "    Normalized histograms." << std::endl;
   }
-  std::cout << "    Normalized histograms." << std::endl;
 
   // loop over histograms
   for (std::size_t ihist = 0; ihist < histograms.size(); ++ihist) {
     histograms[ihist] -> SetMarkerColor( get<0>(styles.at(ihist)) );
     histograms[ihist] -> SetMarkerStyle( get<1>(styles.at(ihist)) );
+    histograms[ihist] -> SetMarkerSize( get<4>(styles.at(ihist)) );
     histograms[ihist] -> SetFillColor( get<0>(styles.at(ihist)) );
     histograms[ihist] -> SetFillStyle( get<2>(styles.at(ihist)) );
     histograms[ihist] -> SetLineColor( get<0>(styles.at(ihist)) );
@@ -257,23 +314,13 @@ void MakeBUPPlot2024() {
   legend -> SetLineStyle( text_line );
   legend -> SetTextFont( text_font );
   legend -> SetTextAlign( text_align );
+  for (const std::string& line : text) {
+    legend -> AddEntry( (TObject*) 0x0, line.data(), "" );
+  }
   for (std::size_t ihist = 0; ihist < histograms.size(); ++ihist) {
     legend -> AddEntry( histograms[ihist], labels.at(ihist).data(), "pf" );
   }
   std::cout << "    Made legend." << std::endl;
-
-  // make text box
-  TPaveText* box = new TPaveText( text_dim[0], text_dim[1], text_dim[2], text_dim[3], "NDC NB" );
-  box -> SetFillColor( text_color );
-  box -> SetFillStyle( text_fill );
-  box -> SetLineColor( text_color );
-  box -> SetLineStyle( text_line );
-  box -> SetTextFont( text_font );
-  box -> SetTextAlign( text_align );
-  for (const std::string& line : text) {
-    box -> AddText( line.data() );
-  }
-  std::cout << "    Made text box." << std::endl;
 
   // make line
   TLine* line = new TLine( line_dim[0], line_dim[1], line_dim[2], line_dim[3] );
@@ -307,7 +354,6 @@ void MakeBUPPlot2024() {
     histograms[ihist] -> Draw("same");
   }
   line   -> Draw();
-  box    -> Draw();
   legend -> Draw();
   std::cout << "    Drew objects." << std::endl;
 
